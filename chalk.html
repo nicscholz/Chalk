@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0A0A0A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Chalk" />
+  <title>Chalk</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; background: #0A0A0A; color: #E8E0D5;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    button { cursor: pointer; font-family: inherit; }
+    input, textarea, select { font-family: inherit; }
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    #app { display: flex; flex-direction: column; min-height: 100dvh; max-width: 680px; margin: 0 auto; }
+
+    /* Header */
+    .header { position: sticky; top: 0; z-index: 10; background: #0A0A0A; border-bottom: 1px solid #1E1E1E; }
+    .header-inner { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; }
+    .app-name { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: #E8E0D5; }
+    .app-sub  { font-size: 8px; font-weight: 700; letter-spacing: 0.2em; color: #555; margin-top: 4px; }
+    .header-stats { display: flex; align-items: stretch; }
+    .stat-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 16px; border-left: 1px solid #1E1E1E; }
+    .stat-num { font-size: 20px; font-weight: 900; color: #C8A96E; line-height: 1; }
+    .stat-label { font-size: 8px; font-weight: 700; letter-spacing: 0.18em; color: #555; margin-top: 3px; }
+    .fargo-box { cursor: pointer; }
+    .fargo-edit { background: transparent; border: none; border-bottom: 1px solid #C8A96E; color: #C8A96E; font-size: 20px; font-weight: 900; width: 52px; text-align: center; outline: none; padding: 0; }
+    .edit-icon { font-size: 10px; color: #333; margin-left: 3px; vertical-align: middle; }
+
+    /* Layout */
+    .content { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 20; background: #0F0F0F; border-top: 1px solid #1E1E1E; display: flex; max-width: 680px; margin: 0 auto; padding-bottom: env(safe-area-inset-bottom); }
+    .nav-btn { flex: 1; background: none; border: none; border-top: 2px solid transparent; color: #555; font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; padding: 12px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .nav-btn.active { border-top-color: #C8A96E; color: #C8A96E; }
+    .nav-icon { font-size: 18px; line-height: 1; }
+
+    /* Section */
+    .section-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #1E1E1E; }
+    .section-title { font-size: 18px; font-weight: 900; letter-spacing: -0.01em; text-transform: uppercase; }
+    .btn-gold { background: #C8A96E; border: none; color: #0A0A0A; font-size: 10px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; padding: 9px 18px; }
+    .btn-outline { background: transparent; border: 1px solid #2A2A2A; color: #555; font-size: 10px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; padding: 9px 18px; }
+
+    /* Form */
+    .form-wrap { margin: 16px; padding: 18px; background: #0F0F0F; border: 1px solid #1E1E1E; }
+    .form-title { font-size: 9px; font-weight: 900; color: #C8A96E; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 16px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+    .field-label { font-size: 8px; font-weight: 900; color: #555; letter-spacing: 0.18em; text-transform: uppercase; }
+    .field-input { background: #1A1A1A; border: 1px solid #2A2A2A; color: #E8E0D5; padding: 10px 12px; font-size: 14px; font-weight: 700; width: 100%; outline: none; -webkit-appearance: none; }
+    .field-input::placeholder { color: #333; }
+    textarea.field-input { min-height: 80px; resize: none; line-height: 1.6; font-weight: 400; font-size: 13px; }
+    select.field-input { cursor: pointer; }
+    .fargo-field-row { display: flex; gap: 8px; }
+    .fargo-field-row .field-input { flex: 1; }
+    .lookup-btn { background: transparent; border: 1px solid #C8A96E; color: #C8A96E; font-size: 10px; font-weight: 900; letter-spacing: 0.1em; padding: 0 14px; white-space: nowrap; }
+    .lookup-hint { font-size: 9px; color: #555; margin-top: 4px; }
+
+    /* Match list */
+    .match-list { display: flex; flex-direction: column; gap: 1px; background: #1E1E1E; }
+    .match-card { background: #0F0F0F; }
+    .match-row { display: flex; align-items: stretch; cursor: pointer; }
+    .color-tab { width: 4px; flex-shrink: 0; }
+    .match-info { flex: 1; padding: 14px 16px; min-width: 0; }
+    .match-opponent { font-size: 15px; font-weight: 900; color: #E8E0D5; text-transform: uppercase; }
+    .match-meta { font-size: 9px; font-weight: 700; color: #555; margin-top: 3px; letter-spacing: 0.05em; }
+    .score-block { display: flex; align-items: center; gap: 10px; padding: 0 18px; border-left: 1px solid #1E1E1E; flex-shrink: 0; }
+    .score-num { font-size: 26px; font-weight: 900; }
+    .score-dash { font-size: 14px; color: #555; font-weight: 700; }
+    .badge-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 14px; gap: 5px; border-left: 1px solid #1E1E1E; min-width: 60px; flex-shrink: 0; }
+    .badge { font-size: 9px; font-weight: 900; letter-spacing: 0.1em; padding: 3px 8px; border: 1px solid; }
+    .chevron { font-size: 9px; color: #333; }
+    .match-expanded { padding: 14px 20px 18px; border-top: 1px solid #1E1E1E; background: #0A0A0A; }
+    .notes-label { font-size: 8px; font-weight: 900; color: #C8A96E; letter-spacing: 0.2em; margin-bottom: 7px; }
+    .notes-text { font-size: 13px; color: #555; line-height: 1.7; margin-bottom: 14px; }
+    .no-notes { font-size: 12px; color: #333; font-style: italic; margin-bottom: 14px; }
+    .btn-delete { background: none; border: 1px solid #2A2A2A; color: #555; font-size: 9px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; padding: 6px 14px; }
+    .btn-edit { background: none; border: 1px solid #C8A96E; color: #C8A96E; font-size: 9px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; padding: 6px 14px; }
+    .btn-save-edit { background: #C8A96E; border: none; color: #0A0A0A; font-size: 9px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; padding: 6px 16px; }
+    .btn-cancel-edit { background: none; border: 1px solid #2A2A2A; color: #555; font-size: 9px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; padding: 6px 14px; }
+    .edit-form { display: flex; flex-direction: column; gap: 10px; }
+    .edit-form .form-grid { margin-bottom: 0; }
+    .edit-form .form-field { margin-bottom: 0; }
+    .edit-actions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
+
+    /* Empty */
+    .empty { text-align: center; padding: 80px 20px; }
+    .empty-num { font-size: 64px; font-weight: 900; color: #1E1E1E; }
+    .empty-label { font-size: 10px; font-weight: 700; color: #333; letter-spacing: 0.18em; text-transform: uppercase; margin-top: 10px; }
+
+    /* Filter */
+    .filter-bar { display: flex; gap: 6px; padding: 12px 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-bottom: 1px solid #1E1E1E; }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-btn { background: transparent; border: 1px solid #2A2A2A; color: #555; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 14px; white-space: nowrap; flex-shrink: 0; }
+    .filter-btn.active { color: #0A0A0A; }
+
+    /* Drills */
+    .drill-list { display: flex; flex-direction: column; gap: 1px; background: #1E1E1E; }
+    .drill-card { background: #0F0F0F; }
+    .cat-bar { display: flex; justify-content: space-between; align-items: center; padding: 9px 16px; border-left: 4px solid; border-bottom: 1px solid #1E1E1E; }
+    .cat-label { font-size: 9px; font-weight: 900; letter-spacing: 0.18em; text-transform: uppercase; }
+    .level-label { font-size: 9px; font-weight: 700; color: #555; letter-spacing: 0.14em; }
+    .drill-body { padding: 18px 18px 14px; display: flex; flex-direction: column; gap: 11px; }
+    .drill-name { font-size: 16px; font-weight: 900; color: #E8E0D5; text-transform: uppercase; line-height: 1.15; }
+    .drill-desc { font-size: 12px; color: #555; line-height: 1.65; }
+    .goal-block { padding-left: 10px; border-left: 3px solid; }
+    .goal-title { font-size: 8px; font-weight: 900; letter-spacing: 0.2em; margin-bottom: 3px; }
+    .goal-text { font-size: 12px; font-weight: 700; color: #E8E0D5; }
+    .tips-toggle { background: none; border: none; border-top: 1px solid #1E1E1E; border-bottom: 1px solid #1E1E1E; color: #555; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 8px 0; width: 100%; text-align: left; }
+    .tips-list { display: flex; flex-direction: column; }
+    .tip-row { display: flex; gap: 10px; font-size: 12px; color: #555; line-height: 1.55; padding: 6px 0; border-bottom: 1px solid #1E1E1E; }
+    .tip-dash { font-weight: 900; flex-shrink: 0; }
+    .progress-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px solid #1E1E1E; padding-top: 11px; }
+    .progress-nums { display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+    .prog-num { font-size: 22px; font-weight: 900; color: #E8E0D5; }
+    .prog-label { font-size: 8px; font-weight: 700; color: #555; letter-spacing: 0.14em; margin-left: 4px; }
+    .last-date { font-size: 9px; color: #333; font-weight: 700; }
+    .log-row { display: flex; gap: 4px; align-items: center; }
+    .rep-input { width: 60px; padding: 7px 8px; background: #1A1A1A; border: 1px solid #2A2A2A; color: #E8E0D5; font-size: 13px; font-weight: 700; text-align: center; outline: none; }
+    .btn-log { background: #C8A96E; border: none; color: #0A0A0A; font-size: 10px; font-weight: 900; letter-spacing: 0.12em; padding: 7px 14px; }
+    .btn-cancel-log { background: none; border: 1px solid #2A2A2A; color: #555; font-size: 13px; padding: 7px 10px; }
+    .btn-session { background: none; border: 1px solid #2A2A2A; color: #C8A96E; font-size: 9px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; padding: 7px 14px; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip { border: 1px solid #1E1E1E; padding: 3px 8px; font-size: 11px; font-weight: 700; display: flex; gap: 8px; }
+
+    /* iOS install hint */
+    .ios-hint { background: #C8A96E; padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+    .ios-hint-text { color: #0A0A0A; font-size: 11px; font-weight: 800; flex: 1; }
+    .ios-hint-x { background: none; border: none; color: #0A0A0A; font-size: 18px; font-weight: 900; line-height: 1; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const C = {
+  bg:'#0A0A0A', panel:'#0F0F0F', border:'#1E1E1E', border2:'#2A2A2A',
+  gold:'#C8A96E', white:'#E8E0D5', dim:'#555', dim2:'#333', gray:'#1A1A1A',
+  winCol:'#7EC87E', lossCol:'#C87E7E',
+};
+
+const CAT_COL = {
+  'Potting':'#C8A96E','Cue Ball Control':'#7EB8C8',
+  'Position Play':'#8EC87E','Break Shot':'#C87E7E','Safety Play':'#B87EC8',
+};
+
+const DRILLS = [
+  {id:1,name:'Ghost Ball Straight-In',cat:'Potting',diff:'Beginner',
+   desc:'Set up 10 straight-in shots from various distances. Focus on a smooth, consistent stroke and staying down through contact.',
+   goal:'Pot 8 of 10 balls consistently',
+   tips:['Keep your bridge hand completely still','Follow through 6 inches past the cue ball','Pause at the bottom of your backswing']},
+  {id:2,name:'The L-Drill',cat:'Cue Ball Control',diff:'Intermediate',
+   desc:'Place 15 balls along two rails forming an L-shape. Pot each ball in sequence while controlling cue ball position for the next shot.',
+   goal:'Run all 15 without scratching',
+   tips:['Think 2 shots ahead at all times','Use running english on rail cuts','Speed control matters more than spin']},
+  {id:3,name:'Stop Shot Drill',cat:'Cue Ball Control',diff:'Beginner',
+   desc:'Shoot a straight-in shot with a stop shot — center cue ball, firm stroke. Object ball pockets, cue ball stops dead.',
+   goal:'Perfect stop 9 of 10 times',
+   tips:['Strike absolutely dead center','Accelerate through the ball','Do not decelerate at contact']},
+  {id:4,name:'Rail Cut Series',cat:'Potting',diff:'Intermediate',
+   desc:'Place the object ball 6 inches from the long rail at various angles. Practice cutting it down the rail into the corner pocket.',
+   goal:'Pot 7 of 10 at each angle',
+   tips:['Aim thin on rail cuts','Use a touch of outside english','Trust your eyes and do not over-aim']},
+  {id:5,name:'CB to Center Table',cat:'Position Play',diff:'Intermediate',
+   desc:'After each shot, leave the cue ball within a 1-foot radius of table center. Shoot from 10 different positions.',
+   goal:'Land in zone 7 of 10 times',
+   tips:['Think of the table in thirds','Use softer speed whenever possible','Natural roll carries far — compensate early']},
+  {id:6,name:'9-Ball Break Practice',cat:'Break Shot',diff:'Intermediate',
+   desc:'Practice your 9-ball break 20 times, tracking balls pocketed, scratches, and cue ball position after each break.',
+   goal:'Average 2+ balls pocketed, no scratches',
+   tips:['Hit the 1-ball full and firm','Keep cue ball on or near center','Experiment with rail position on the break']},
+  {id:7,name:'The Clock Drill',cat:'Position Play',diff:'Advanced',
+   desc:'Place a ball at table center. Shoot from 12 positions around it like a clock face, pocketing to the same corner every time.',
+   goal:'Run all 12 positions in sequence',
+   tips:['Each position requires different english','Map out your angles before shooting','Speed control changes your cue ball angle']},
+  {id:8,name:'One Pocket Finesse',cat:'Safety Play',diff:'Advanced',
+   desc:'Practice intentional safeties — leave your opponent without a shot while maintaining cue ball control. 10 different scenarios.',
+   goal:'Execute 8 of 10 successful safeties',
+   tips:['Thin contacts give less cue ball movement','Use the rails to hide the cue ball','Think about what shot you would hate to face']},
+];
+
+const GAMES = ['8-Ball','9-Ball','10-Ball','One Pocket','Straight Pool','Banks'];
+const DIFF  = {Beginner:'I',Intermediate:'II',Advanced:'III'};
+
+let state = {
+  tab:'matches', matches:[], prog:{}, fargo:'530',
+  catFilter:'All', showForm:false, openMatch:null,
+  openTips:null, logDrill:null, editingFargo:false,
+  showIosHint:false, editMatch:null, editBuf:null,
+  form:{opponent:'',theirFargo:'',game:'9-Ball',my:'',their:'',notes:''},
+};
+
+function load() {
+  try { state.matches = JSON.parse(localStorage.getItem('chalk_matches')) || []; } catch(e){}
+  try { state.prog    = JSON.parse(localStorage.getItem('chalk_prog'))    || {}; } catch(e){}
+  try { state.fargo   = localStorage.getItem('chalk_fargo') || '530'; } catch(e){}
+  // Show iOS install hint if running in Safari and not already installed
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInstalled = window.navigator.standalone;
+  try { state.showIosHint = isIos && !isInstalled && !localStorage.getItem('chalk_hint_dismissed'); } catch(e){}
+}
+
+function save() {
+  localStorage.setItem('chalk_matches', JSON.stringify(state.matches));
+  localStorage.setItem('chalk_prog',    JSON.stringify(state.prog));
+  localStorage.setItem('chalk_fargo',   state.fargo);
+}
+
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function wins()   { return state.matches.filter(m=>parseInt(m.my)>parseInt(m.their)).length; }
+function losses() { return state.matches.length - wins(); }
+
+/* ── DOM helpers ── */
+function el(tag, opts) {
+  const node = document.createElement(tag);
+  if (!opts) return node;
+  if (opts.class)       node.className    = opts.class;
+  if (opts.style)       node.style.cssText = opts.style;
+  if (opts.type)        node.type         = opts.type;
+  if (opts.placeholder) node.placeholder  = opts.placeholder;
+  if (opts.text !== undefined) node.textContent = opts.text;
+  if (opts.html)        node.innerHTML    = opts.html;
+  if (opts.title)       node.title        = opts.title;
+  return node;
+}
+function formField(label) {
+  const f = el('div',{class:'form-field'});
+  f.appendChild(el('div',{class:'field-label',text:label}));
+  return f;
+}
+function textInp(val, ph, onChange, type) {
+  const i = el('input',{class:'field-input',type:type||'text',placeholder:ph});
+  i.value = val||'';
+  i.addEventListener('input',function(){ onChange(this.value); });
+  return i;
+}
+
+/* ── Render ── */
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  // iOS install hint
+  if (state.showIosHint) {
+    const hint = el('div',{class:'ios-hint'});
+    hint.appendChild(el('span',{class:'ios-hint-text',text:'Tap the Share button then "Add to Home Screen" to install Chalk'}));
+    const x = el('button',{class:'ios-hint-x',text:'x'});
+    x.addEventListener('click',function(){
+      state.showIosHint = false;
+      localStorage.setItem('chalk_hint_dismissed','1');
+      render();
+    });
+    hint.appendChild(x);
+    app.appendChild(hint);
+  }
+
+  app.appendChild(renderHeader());
+  const content = el('div',{class:'content'});
+  content.appendChild(state.tab==='matches' ? renderMatches() : renderDrills());
+  app.appendChild(content);
+  app.appendChild(renderNav());
+}
+
+function renderHeader() {
+  const hdr   = el('div',{class:'header'});
+  const inner = el('div',{class:'header-inner'});
+
+  const logo = el('div');
+  logo.appendChild(el('div',{class:'app-name',text:'CHALK'}));
+  logo.appendChild(el('div',{class:'app-sub', text:'POOL TRAINING SYSTEM'}));
+  inner.appendChild(logo);
+
+  const stats = el('div',{class:'header-stats'});
+
+  // Editable Fargo
+  const fBox = el('div',{class:'stat-box fargo-box',title:'Tap to edit'});
+  if (state.editingFargo) {
+    const inp = el('input',{class:'fargo-edit',type:'number'});
+    inp.value = state.fargo;
+    inp.addEventListener('blur', commitFargo);
+    inp.addEventListener('keydown',function(e){ if(e.key==='Enter') commitFargo.call(inp); });
+    fBox.appendChild(inp);
+    setTimeout(function(){ inp.focus(); inp.select(); }, 10);
+  } else {
+    const row = el('div',{style:'display:flex;align-items:center'});
+    row.appendChild(el('div',{class:'stat-num',text:state.fargo}));
+    row.appendChild(el('span',{class:'edit-icon',text:'✎'}));
+    fBox.appendChild(row);
+    fBox.addEventListener('click',function(){ state.editingFargo=true; render(); });
+  }
+  fBox.appendChild(el('div',{class:'stat-label',text:'FARGO'}));
+  stats.appendChild(fBox);
+
+  [['SETS',state.matches.length],['W',wins()],['L',losses()]].forEach(function(item){
+    const b = el('div',{class:'stat-box'});
+    b.appendChild(el('div',{class:'stat-num',  text:item[1]}));
+    b.appendChild(el('div',{class:'stat-label',text:item[0]}));
+    stats.appendChild(b);
+  });
+
+  inner.appendChild(stats);
+  hdr.appendChild(inner);
+  return hdr;
+}
+
+function commitFargo() {
+  const v = (this.value||'').trim();
+  if (v && !isNaN(parseInt(v))) state.fargo = v;
+  state.editingFargo = false;
+  save(); render();
+}
+
+function renderNav() {
+  const nav = el('div',{class:'bottom-nav'});
+  [['matches','▤','Match Log'],['drills','◎','Practice']].forEach(function(item){
+    const btn = el('button',{class:'nav-btn'+(state.tab===item[0]?' active':'')});
+    btn.appendChild(el('span',{class:'nav-icon',text:item[1]}));
+    btn.appendChild(el('span',{text:item[2]}));
+    btn.addEventListener('click',function(){ state.tab=item[0]; render(); });
+    nav.appendChild(btn);
+  });
+  return nav;
+}
+
+/* ── MATCHES ── */
+function renderMatches() {
+  const wrap = el('div');
+
+  const hdr = el('div',{class:'section-header'});
+  hdr.appendChild(el('div',{class:'section-title',text:'Match Log'}));
+  const btn = el('button',{class:state.showForm?'btn-outline':'btn-gold',text:state.showForm?'CANCEL':'+ NEW SET'});
+  btn.addEventListener('click',function(){ state.showForm=!state.showForm; render(); });
+  hdr.appendChild(btn);
+  wrap.appendChild(hdr);
+
+  if (state.showForm) wrap.appendChild(renderMatchForm());
+
+  if (!state.matches.length && !state.showForm) {
+    const empty = el('div',{class:'empty'});
+    empty.appendChild(el('div',{class:'empty-num',text:'0'}));
+    empty.appendChild(el('div',{class:'empty-label',text:'No sets recorded yet'}));
+    wrap.appendChild(empty);
+  }
+
+  const list = el('div',{class:'match-list'});
+  state.matches.forEach(function(m){ list.appendChild(renderMatchCard(m)); });
+  wrap.appendChild(list);
+  return wrap;
+}
+
+function renderMatchForm() {
+  const f    = state.form;
+  const wrap = el('div',{class:'form-wrap'});
+  wrap.appendChild(el('div',{class:'form-title',text:'RECORD A SET'}));
+
+  // Opponent
+  const opp = formField('OPPONENT');
+  opp.appendChild(textInp(f.opponent,'Their name',function(v){state.form.opponent=v;}));
+  wrap.appendChild(opp);
+
+  // Opp Fargo + lookup
+  const fg = formField('OPPONENT FARGO');
+  const row = el('div',{class:'fargo-field-row'});
+  row.appendChild(textInp(f.theirFargo,'e.g. 480',function(v){state.form.theirFargo=v;},'number'));
+  const lookupBtn = el('button',{class:'lookup-btn',text:'↗ LOOK UP'});
+  lookupBtn.addEventListener('click',function(){ window.open('https://fairmatch.fargorate.com/','_blank'); });
+  row.appendChild(lookupBtn);
+  fg.appendChild(row);
+  fg.appendChild(el('div',{class:'lookup-hint',text:'Opens FargoRate in a new tab — come back and enter the rating'}));
+  wrap.appendChild(fg);
+
+  // Scores
+  const grid = el('div',{class:'form-grid'});
+  const myF = formField('YOUR SCORE');
+  myF.appendChild(textInp(f.my,'0',function(v){state.form.my=v;},'number'));
+  const theirF = formField('THEIR SCORE');
+  theirF.appendChild(textInp(f.their,'0',function(v){state.form.their=v;},'number'));
+  grid.appendChild(myF);
+  grid.appendChild(theirF);
+  wrap.appendChild(grid);
+
+  // Game type
+  const gf  = formField('GAME TYPE');
+  const sel = el('select',{class:'field-input'});
+  GAMES.forEach(function(g){
+    const o = document.createElement('option');
+    o.value=g; o.textContent=g;
+    if(g===f.game) o.selected=true;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change',function(){ state.form.game=this.value; });
+  gf.appendChild(sel);
+  wrap.appendChild(gf);
+
+  // Notes
+  const nf = formField('NOTES');
+  const ta = el('textarea',{class:'field-input',placeholder:"What did you notice? Mistakes, patterns, shots to work on..."});
+  ta.value = f.notes;
+  ta.addEventListener('input',function(){ state.form.notes=this.value; });
+  nf.appendChild(ta);
+  wrap.appendChild(nf);
+
+  // Save
+  const saveBtn = el('button',{class:'btn-gold',text:'SAVE SET',style:'width:100%;padding:12px;margin-top:4px;font-size:11px;letter-spacing:0.14em;'});
+  saveBtn.addEventListener('click',function(){
+    if(!state.form.opponent||!state.form.my||!state.form.their){
+      alert('Please fill in opponent, your score, and their score.'); return;
+    }
+    const entry = Object.assign({id:Date.now(),date:new Date().toISOString()},state.form);
+    state.matches.unshift(entry);
+    state.form = {opponent:'',theirFargo:'',game:'9-Ball',my:'',their:'',notes:''};
+    state.showForm = false;
+    save(); render();
+  });
+  wrap.appendChild(saveBtn);
+  return wrap;
+}
+
+function renderMatchCard(m) {
+  const win = parseInt(m.my)>parseInt(m.their);
+  const exp = state.openMatch===m.id;
+  const acc = win?C.winCol:C.lossCol;
+
+  const card = el('div',{class:'match-card'});
+  const row  = el('div',{class:'match-row'});
+
+  row.appendChild(el('div',{class:'color-tab',style:'background:'+acc}));
+
+  const info = el('div',{class:'match-info'});
+  info.appendChild(el('div',{class:'match-opponent',text:m.opponent.toUpperCase()}));
+  const meta = m.game+' · '+fmtDate(m.date)+(m.theirFargo?' · Opp. Fargo '+m.theirFargo:'');
+  info.appendChild(el('div',{class:'match-meta',text:meta}));
+  row.appendChild(info);
+
+  const sc = el('div',{class:'score-block'});
+  sc.appendChild(el('span',{class:'score-num',text:m.my,  style:'color:'+(win?C.winCol:C.white)}));
+  sc.appendChild(el('span',{class:'score-dash',text:'-'}));
+  sc.appendChild(el('span',{class:'score-num',text:m.their,style:'color:'+(!win?C.lossCol:C.white)}));
+  row.appendChild(sc);
+
+  const bb = el('div',{class:'badge-block'});
+  bb.appendChild(el('div',{class:'badge',text:win?'WIN':'LOSS',style:'color:'+acc+';background:'+acc+'22;border-color:'+acc+'55'}));
+  bb.appendChild(el('div',{class:'chevron',text:exp?'▲':'▼'}));
+  row.appendChild(bb);
+
+  row.addEventListener('click',function(){ state.openMatch=exp?null:m.id; render(); });
+  card.appendChild(row);
+
+  if (exp) {
+    const isEditing = state.editMatch === m.id;
+    const ex = el('div',{class:'match-expanded'});
+
+    if (isEditing) {
+      // ── Edit form ──
+      const ef = el('div',{class:'edit-form'});
+      ef.appendChild(el('div',{class:'form-title',text:'EDIT SET',style:'margin-bottom:0'}));
+
+      // Opponent
+      const oppF = formField('OPPONENT');
+      const oppI = textInp(m.opponent,'Their name',function(v){ state.editBuf.opponent=v; });
+      oppF.appendChild(oppI);
+      ef.appendChild(oppF);
+
+      // Scores + Fargo
+      const grid = el('div',{class:'form-grid'});
+      const myF = formField('YOUR SCORE');
+      myF.appendChild(textInp(m.my,'0',function(v){ state.editBuf.my=v; },'number'));
+      const thF = formField('THEIR SCORE');
+      thF.appendChild(textInp(m.their,'0',function(v){ state.editBuf.their=v; },'number'));
+      const fgF = formField('OPP. FARGO');
+      const fgRow = el('div',{class:'fargo-field-row'});
+      fgRow.appendChild(textInp(m.theirFargo||'','e.g. 480',function(v){ state.editBuf.theirFargo=v; },'number'));
+      const lkBtn = el('button',{class:'lookup-btn',text:'↗'});
+      lkBtn.addEventListener('click',function(){ window.open('https://fairmatch.fargorate.com/','_blank'); });
+      fgRow.appendChild(lkBtn);
+      fgF.appendChild(fgRow);
+      const gmF = formField('GAME TYPE');
+      const sel = el('select',{class:'field-input'});
+      GAMES.forEach(function(g){
+        const o=document.createElement('option'); o.value=g; o.textContent=g;
+        if(g===state.editBuf.game) o.selected=true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener('change',function(){ state.editBuf.game=this.value; });
+      gmF.appendChild(sel);
+      grid.appendChild(myF); grid.appendChild(thF);
+      grid.appendChild(fgF); grid.appendChild(gmF);
+      ef.appendChild(grid);
+
+      // Notes
+      const nF = formField('NOTES');
+      const ta = el('textarea',{class:'field-input',placeholder:'What did you notice?'});
+      ta.value = state.editBuf.notes||'';
+      ta.addEventListener('input',function(){ state.editBuf.notes=this.value; });
+      nF.appendChild(ta);
+      ef.appendChild(nF);
+
+      // Action buttons
+      const actions = el('div',{class:'edit-actions'});
+
+      const saveBtn = el('button',{class:'btn-save-edit',text:'SAVE CHANGES'});
+      saveBtn.addEventListener('click',function(){
+        if(!state.editBuf.opponent||!state.editBuf.my||!state.editBuf.their){
+          alert('Opponent, your score, and their score are required.'); return;
+        }
+        state.matches = state.matches.map(function(x){
+          return x.id===m.id ? Object.assign({},x,state.editBuf) : x;
+        });
+        state.editMatch=null; state.editBuf=null;
+        save(); render();
+      });
+      actions.appendChild(saveBtn);
+
+      const cancelBtn = el('button',{class:'btn-cancel-edit',text:'CANCEL'});
+      cancelBtn.addEventListener('click',function(){ state.editMatch=null; state.editBuf=null; render(); });
+      actions.appendChild(cancelBtn);
+
+      const delBtn = el('button',{class:'btn-delete',text:'DELETE'});
+      delBtn.addEventListener('click',function(){
+        if(confirm('Delete this set?')){
+          state.matches=state.matches.filter(function(x){return x.id!==m.id;});
+          state.openMatch=null; state.editMatch=null; save(); render();
+        }
+      });
+      actions.appendChild(delBtn);
+
+      ef.appendChild(actions);
+      ex.appendChild(ef);
+
+    } else {
+      // ── Read view ──
+      if (m.notes) {
+        ex.appendChild(el('div',{class:'notes-label',text:'NOTES'}));
+        ex.appendChild(el('div',{class:'notes-text', text:m.notes}));
+      } else {
+        ex.appendChild(el('div',{class:'no-notes',text:'No notes recorded for this set.'}));
+      }
+
+      const actions = el('div',{class:'edit-actions'});
+
+      const editBtn = el('button',{class:'btn-edit',text:'EDIT SET'});
+      editBtn.addEventListener('click',function(){
+        state.editMatch = m.id;
+        state.editBuf = {
+          opponent: m.opponent, theirFargo: m.theirFargo||'',
+          game: m.game, my: m.my, their: m.their, notes: m.notes||''
+        };
+        render();
+      });
+      actions.appendChild(editBtn);
+
+      const del = el('button',{class:'btn-delete',text:'DELETE SET'});
+      del.addEventListener('click',function(){
+        if(confirm('Delete this set?')){
+          state.matches=state.matches.filter(function(x){return x.id!==m.id;});
+          state.openMatch=null; save(); render();
+        }
+      });
+      actions.appendChild(del);
+
+      ex.appendChild(actions);
+    }
+
+    card.appendChild(ex);
+  }
+  return card;
+}
+
+/* ── DRILLS ── */
+function renderDrills() {
+  const wrap = el('div');
+  const hdr  = el('div',{class:'section-header'});
+  hdr.appendChild(el('div',{class:'section-title',text:'Practice Drills'}));
+  wrap.appendChild(hdr);
+
+  const bar  = el('div',{class:'filter-bar'});
+  const cats = ['All'].concat(Object.keys(CAT_COL));
+  cats.forEach(function(cat){
+    const active = state.catFilter===cat;
+    const cc = CAT_COL[cat]||C.gold;
+    const btn = el('button',{class:'filter-btn'+(active?' active':'')});
+    btn.textContent = cat.toUpperCase();
+    if(active){ btn.style.background=cc; btn.style.borderColor=cc; }
+    btn.addEventListener('click',function(){ state.catFilter=cat; render(); });
+    bar.appendChild(btn);
+  });
+  wrap.appendChild(bar);
+
+  const drills = state.catFilter==='All'?DRILLS:DRILLS.filter(function(d){return d.cat===state.catFilter;});
+  const list   = el('div',{class:'drill-list'});
+  drills.forEach(function(d){ list.appendChild(renderDrillCard(d)); });
+  wrap.appendChild(list);
+  return wrap;
+}
+
+function renderDrillCard(drill) {
+  const sessions  = state.prog[drill.id]||[];
+  const totalReps = sessions.reduce(function(a,s){return a+s.reps;},0);
+  const isLogging = state.logDrill===drill.id;
+  const showTips  = state.openTips===drill.id;
+  const cc        = CAT_COL[drill.cat];
+
+  const card = el('div',{class:'drill-card'});
+
+  const catBar = el('div',{class:'cat-bar',style:'border-left-color:'+cc});
+  catBar.appendChild(el('span',{class:'cat-label',  text:drill.cat.toUpperCase(),style:'color:'+cc}));
+  catBar.appendChild(el('span',{class:'level-label',text:'LEVEL '+DIFF[drill.diff]}));
+  card.appendChild(catBar);
+
+  const body = el('div',{class:'drill-body'});
+  body.appendChild(el('div',{class:'drill-name',text:drill.name.toUpperCase()}));
+  body.appendChild(el('div',{class:'drill-desc',text:drill.desc}));
+
+  const goal = el('div',{class:'goal-block',style:'border-left-color:'+cc});
+  goal.appendChild(el('div',{class:'goal-title',text:'GOAL',style:'color:'+cc}));
+  goal.appendChild(el('div',{class:'goal-text', text:drill.goal}));
+  body.appendChild(goal);
+
+  const tBtn = el('button',{class:'tips-toggle',text:showTips?'▲  HIDE TIPS':'▼  COACHING TIPS'});
+  tBtn.addEventListener('click',function(){ state.openTips=showTips?null:drill.id; render(); });
+  body.appendChild(tBtn);
+
+  if (showTips) {
+    const tList = el('div',{class:'tips-list'});
+    drill.tips.forEach(function(tip){
+      const r = el('div',{class:'tip-row'});
+      r.appendChild(el('span',{class:'tip-dash',text:'—',style:'color:'+cc}));
+      r.appendChild(el('span',{text:tip}));
+      tList.appendChild(r);
+    });
+    body.appendChild(tList);
+  }
+
+  const progRow = el('div',{class:'progress-row'});
+  const nums    = el('div',{class:'progress-nums'});
+  const s1=el('span'); s1.appendChild(el('span',{class:'prog-num',text:sessions.length})); s1.appendChild(el('span',{class:'prog-label',text:'SESSIONS'})); nums.appendChild(s1);
+  const s2=el('span'); s2.appendChild(el('span',{class:'prog-num',text:totalReps}));       s2.appendChild(el('span',{class:'prog-label',text:'REPS'}));     nums.appendChild(s2);
+  if(sessions.length) nums.appendChild(el('span',{class:'last-date',text:fmtDate(sessions[sessions.length-1].date)}));
+  progRow.appendChild(nums);
+
+  if (isLogging) {
+    const lr  = el('div',{class:'log-row'});
+    const inp = el('input',{class:'rep-input',type:'number',placeholder:'reps'});
+    inp.addEventListener('keydown',function(e){ if(e.key==='Enter') doLog(drill.id,inp.value); });
+    lr.appendChild(inp);
+    const lb = el('button',{class:'btn-log',text:'LOG'});
+    lb.addEventListener('click',function(){ doLog(drill.id,inp.value); });
+    lr.appendChild(lb);
+    const cb = el('button',{class:'btn-cancel-log',text:'✕'});
+    cb.addEventListener('click',function(){ state.logDrill=null; render(); });
+    lr.appendChild(cb);
+    progRow.appendChild(lr);
+    setTimeout(function(){ inp.focus(); },10);
+  } else {
+    const sb = el('button',{class:'btn-session',text:'+ LOG SESSION'});
+    sb.addEventListener('click',function(){ state.logDrill=drill.id; render(); });
+    progRow.appendChild(sb);
+  }
+  body.appendChild(progRow);
+
+  if (sessions.length) {
+    const chips = el('div',{class:'chips'});
+    sessions.slice(-3).reverse().forEach(function(s){
+      const chip = el('div',{class:'chip'});
+      chip.appendChild(el('span',{text:s.reps+' reps',style:'color:'+cc}));
+      chip.appendChild(el('span',{text:fmtDate(s.date),style:'color:#555'}));
+      chips.appendChild(chip);
+    });
+    body.appendChild(chips);
+  }
+
+  card.appendChild(body);
+  return card;
+}
+
+function doLog(id,val) {
+  const n = parseInt(val);
+  if(!n||n<1){ alert('Enter number of reps.'); return; }
+  if(!state.prog[id]) state.prog[id]=[];
+  state.prog[id].push({date:new Date().toISOString(),reps:n});
+  state.logDrill=null;
+  save(); render();
+}
+
+load();
+render();
+</script>
+</body>
+</html>
